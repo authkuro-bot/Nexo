@@ -21,6 +21,9 @@ const __dirname = path.dirname(__filename);
 
 export const app = express();
 
+// Trust proxy for Railway deployment (required for rate limiting)
+app.set('trust proxy', true);
+
 const isProd = process.env.NODE_ENV === 'production';
 const r2PublicUrl = process.env.CLOUDFLARE_R2_PUBLIC_URL?.replace(/\/$/, '');
 const r2Sources = r2PublicUrl ? [r2PublicUrl] : [];
