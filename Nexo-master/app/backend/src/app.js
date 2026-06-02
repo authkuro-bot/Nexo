@@ -66,6 +66,7 @@ const chatLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  trustProxy: true, // Trust Railway proxy headers
 });
 
 const apiLimiter = rateLimit({
@@ -73,6 +74,7 @@ const apiLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
+  trustProxy: true, // Trust Railway proxy headers
 });
 
 app.use('/api/chat', chatLimiter);
@@ -91,13 +93,11 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-if (process.env.NODE_ENV === 'production') {
-  const distPath = path.join(__dirname, '../../dist');
-  app.use(express.static(distPath));
-  app.get('*', (_req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
-  });
-}
+// Static file serving removed - frontend is deployed separately on Vercel
+// app.use(express.static(distPath));
+// app.get('*', (_req, res) => {
+//   res.sendFile(path.join(distPath, 'index.html'));
+// });
 
 app.use((err, _req, res, _next) => {
   console.error(err.stack || err);
