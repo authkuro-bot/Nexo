@@ -88,6 +88,16 @@ Write-Host "`n✅ Backend deployed successfully!" -ForegroundColor Green
 $backendUrl = railway domain 2>&1
 Write-Host "🔗 Backend URL: $backendUrl" -ForegroundColor Blue
 
+# Configure OTP display (optional)
+Write-Host "`n🔧 Configure Dev OTP Display..." -ForegroundColor Yellow
+$enableOtp = Read-Host "Enable OTP display in production? (y/N)"
+if ($enableOtp -eq "y" -or $enableOtp -eq "Y") {
+    railway variables set SHOW_DEV_OTP=true
+    Write-Host "✅ Dev OTP enabled for testing" -ForegroundColor Green
+} else {
+    Write-Host "⏭️  Skipping OTP configuration" -ForegroundColor Gray
+}
+
 # Small delay
 Start-Sleep -Seconds 2
 
