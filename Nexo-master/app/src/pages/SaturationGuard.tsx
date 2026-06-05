@@ -401,22 +401,22 @@ export default function SaturationGuard() {
                 />
               </svg>
 
-              <div className="pointer-events-none absolute inset-x-0 top-[40%] flex flex-col items-center text-center">
-                <p className="text-xs font-bold uppercase tracking-wide text-secondary-gray-500">
+              <div className="pointer-events-none absolute inset-x-0 top-[42%] flex flex-col items-center text-center sm:top-[40%]">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-secondary-gray-500 sm:text-xs">
                   Opportunity Score
                 </p>
-                <p className="mt-1 text-6xl font-black leading-none tracking-tight text-navy-900 sm:text-7xl">
+                <p className="mt-1 text-5xl font-black leading-none tracking-tight text-navy-900 sm:text-7xl">
                   {gaugeValue}%
                 </p>
-                <p className="mt-3 text-sm font-semibold text-secondary-gray-500">
+                <p className="mt-2 text-xs font-semibold text-secondary-gray-500 sm:mt-3 sm:text-sm">
                   Saturation {selectedTrend.saturation}/100
                 </p>
               </div>
 
-              <div className="absolute bottom-4 left-6 text-sm font-bold text-secondary-gray-400 sm:left-9">
+              <div className="absolute bottom-5 left-8 text-xs font-bold text-secondary-gray-400 sm:bottom-4 sm:left-9 sm:text-sm">
                 0%
               </div>
-              <div className="absolute bottom-4 right-6 text-sm font-bold text-secondary-gray-400 sm:right-9">
+              <div className="absolute bottom-5 right-8 text-xs font-bold text-secondary-gray-400 sm:bottom-4 sm:right-9 sm:text-sm">
                 100%
               </div>
             </div>

@@ -25,6 +25,7 @@ const PAGE_SIZE = 6;
 
 interface TrendingContentProps {
   onOpenChat: () => void;
+  onDetailOpenChange?: (open: boolean) => void;
 }
 
 function getPlatformColor(platform: string): string {
@@ -346,7 +347,7 @@ function ContentDetailModal({
   );
 }
 
-export default function TrendingContent({ onOpenChat }: TrendingContentProps) {
+export default function TrendingContent({ onOpenChat, onDetailOpenChange }: TrendingContentProps) {
   const { getTrendById, setSelectedTrend } = useTrendStore();
   const [activePlatform, setActivePlatform] = useState<string>('Semua');
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
@@ -410,6 +411,12 @@ export default function TrendingContent({ onOpenChat }: TrendingContentProps) {
       body.style.paddingRight = previousBodyPaddingRight;
     };
   }, [selectedContent]);
+
+  useEffect(() => {
+    onDetailOpenChange?.(Boolean(selectedContent));
+
+    return () => onDetailOpenChange?.(false);
+  }, [onDetailOpenChange, selectedContent]);
 
   const filtered: ContentItem[] = contents;
 
