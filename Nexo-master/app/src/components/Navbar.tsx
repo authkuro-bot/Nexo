@@ -5,6 +5,7 @@ import { useAuthStore, useTrendStore } from '@/stores';
 import { useNotificationStore } from '@/stores';
 import { clearStoredAuth, formatGrowth, hideBrokenImage } from '@/lib/utils';
 import { API_URL } from '@/lib/constants';
+import { normalizeTrendMedia } from '@/lib/media';
 import { toast } from 'sonner';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import type { Trend } from '@/types';
@@ -169,7 +170,7 @@ export default function Navbar({ onChatToggle, onNotifToggle, onOpenProduct }: N
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Pencarian gagal');
-        setRemoteResults(json.data ?? []);
+        setRemoteResults(((json.data ?? []) as Trend[]).map(normalizeTrendMedia));
       } catch (error) {
         if ((error as Error).name !== 'AbortError') setRemoteResults([]);
       } finally {

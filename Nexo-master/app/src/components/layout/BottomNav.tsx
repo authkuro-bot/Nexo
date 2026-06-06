@@ -73,7 +73,7 @@ export default function BottomNav({ onOpenChat, onOpenNotif, hidden = false }: B
   };
 
   return (
-    <nav className="fixed bottom-3 left-3 right-3 z-50 rounded-3xl border border-white/90 bg-white/95 shadow-card bottom-nav-anim md:hidden">
+    <nav className="bottom-nav-shell fixed bottom-3 left-3 right-3 z-50 rounded-3xl border border-white/90 bg-white/95 shadow-card bottom-nav-anim md:hidden">
       <div className="flex items-center gap-1 px-2 py-2">
         <button
           type="button"

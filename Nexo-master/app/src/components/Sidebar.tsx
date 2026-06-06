@@ -68,8 +68,10 @@ export default function Sidebar() {
                           : 'text-navy-700 hover:bg-white/80'
                       }`}
                     >
-                      <span className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors ${
-                        isActive ? 'bg-white/15 text-white' : 'bg-white/70 text-secondary-gray-500 group-hover:text-primary'
+                      <span className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors duration-200 ${
+                        isActive
+                          ? 'sidebar-icon-active bg-primary text-white shadow-sm'
+                          : 'bg-white/70 text-secondary-gray-500 group-hover:text-primary'
                       }`}>
                         <Icon size={17} strokeWidth={2.2} />
                       </span>
@@ -105,13 +107,17 @@ export default function Sidebar() {
         <div className="space-y-1.5 border-t border-secondary-gray-200 pt-4">
           <button
             onClick={() => handleClick('/notifications')}
-            className={`flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold transition-all btn-press focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 ${
+            className={`group flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold transition-all btn-press focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 ${
               location.pathname === '/notifications'
                 ? 'bg-navy-900 text-white shadow-card'
                 : 'text-navy-700 hover:bg-white/80'
             }`}
           >
-            <span className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-white/70">
+            <span className={`relative flex h-8 w-8 items-center justify-center rounded-xl transition-colors duration-200 ${
+              location.pathname === '/notifications'
+                ? 'sidebar-icon-active bg-primary text-white shadow-sm'
+                : 'bg-white/70 text-secondary-gray-500 group-hover:text-primary'
+            }`}>
               <Bell size={17} />
               <NotifBadge count={unreadCount} className="absolute -top-1.5 -right-1.5" />
             </span>
@@ -119,13 +125,17 @@ export default function Sidebar() {
           </button>
           <button
             onClick={() => handleClick('/settings')}
-            className={`flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold transition-all btn-press focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 ${
+            className={`group flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold transition-all btn-press focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 ${
               location.pathname === '/settings'
                 ? 'bg-navy-900 text-white shadow-card'
                 : 'text-navy-700 hover:bg-white/80'
             }`}
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70">
+            <span className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors duration-200 ${
+              location.pathname === '/settings'
+                ? 'sidebar-icon-active bg-primary text-white shadow-sm'
+                : 'bg-white/70 text-secondary-gray-500 group-hover:text-primary'
+            }`}>
               <Settings size={17} />
             </span>
             Pengaturan

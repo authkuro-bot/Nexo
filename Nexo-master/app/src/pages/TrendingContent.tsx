@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { API_URL } from '@/lib/constants';
+import { normalizeContentMedia } from '@/lib/media';
 import { hideBrokenImage, onActivateKey } from '@/lib/utils';
 import Pagination from '@/components/Pagination';
 import { useTrendStore } from '@/stores';
@@ -375,7 +376,7 @@ export default function TrendingContent({ onOpenChat, onDetailOpenChange }: Tren
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Gagal mengambil trending content');
-        setContents(json.data);
+        setContents(((json.data ?? []) as ContentItem[]).map(normalizeContentMedia));
       } catch (fetchError) {
         if ((fetchError as Error).name !== 'AbortError') {
           setError((fetchError as Error).message);

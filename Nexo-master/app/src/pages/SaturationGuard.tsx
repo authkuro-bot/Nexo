@@ -12,6 +12,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { API_URL } from '@/lib/constants';
+import { normalizeTrendMedia } from '@/lib/media';
 import { useTrendStore } from '@/stores';
 import { getSaturationDecision } from '@/lib/utils';
 import { GlossaryTooltip } from '@/components/GlossaryTooltip';
@@ -145,7 +146,7 @@ export default function SaturationGuard() {
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Gagal mengambil saturation detail');
         if (!cancelled) {
-          setApiTrend(json.data);
+          setApiTrend(normalizeTrendMedia(json.data as SaturationDetail));
           setLoadError(null);
         }
       } catch (error) {
