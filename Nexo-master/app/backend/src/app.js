@@ -61,17 +61,6 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 
-const chatLimiter = rateLimit({
-  windowMs: 24 * 60 * 60 * 1000,
-  max: 20,
-  message: {
-    error: 'Batas 20 chat per hari tercapai. Coba lagi besok.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  trustProxy: true, // Trust Railway proxy headers
-});
-
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 100,
@@ -80,7 +69,6 @@ const apiLimiter = rateLimit({
   trustProxy: true, // Trust Railway proxy headers
 });
 
-app.use('/api/chat', chatLimiter);
 app.use('/api', apiLimiter);
 
 app.get('/health', (_req, res) => {

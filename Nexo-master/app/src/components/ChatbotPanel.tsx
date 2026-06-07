@@ -68,7 +68,7 @@ function ChatErrorBubble({
 
 export default function ChatbotPanel({ onClose }: ChatbotPanelProps) {
   const { selectedTrend } = useTrendStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const {
     dailyCount,
     welcomes,
@@ -81,6 +81,7 @@ export default function ChatbotPanel({ onClose }: ChatbotPanelProps) {
     streamChat,
     retryFailedChat,
     clearSession,
+    syncUser,
   } = useChatStore();
 
   const [input, setInput] = useState('');
@@ -98,6 +99,10 @@ export default function ChatbotPanel({ onClose }: ChatbotPanelProps) {
   const isAnalyzing = request?.phase === 'analyzing';
   const isStreaming = request?.phase === 'streaming';
   const isChatBusy = isAnalyzing || isStreaming;
+
+  useEffect(() => {
+    syncUser(user?.id ?? null);
+  }, [syncUser, user?.id]);
 
   useEffect(() => {
     if (trend && messages.length === 0) {
@@ -128,15 +133,9 @@ export default function ChatbotPanel({ onClose }: ChatbotPanelProps) {
       return;
     }
 
-    if (dailyCount >= APP_CONFIG.maxChatsPerDay) {
-      addMessage(trend.id, 'assistant', 'Batas 20 chat per hari tercapai. Coba lagi besok ya.');
-      setInput('');
-      return;
-    }
-
     setInput('');
     void streamChat(trend.id, text);
-  }, [input, isChatBusy, trend, dailyCount, isAuthenticated, addMessage, streamChat]);
+  }, [input, isChatBusy, trend, isAuthenticated, addMessage, streamChat]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -191,7 +190,11 @@ export default function ChatbotPanel({ onClose }: ChatbotPanelProps) {
         <span className="text-xs text-secondary-gray-500">
           Sisa chat hari ini: <strong className={remainingChats <= 5 ? 'text-red-500' : 'text-primary'}>{remainingChats}</strong>/20
         </span>
-        {remainingChats <= 5 && (
+        {remainingChats === 0 ? (
+          <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs font-bold text-primary">
+            Mode demo
+          </span>
+        ) : remainingChats <= 5 && (
           <span className="flex items-center gap-1 rounded-full bg-orange-50 px-2 py-1 text-xs font-bold text-orange-600">
             <AlertTriangle size={12} />
             Hampir habis
@@ -309,10 +312,10 @@ export default function ChatbotPanel({ onClose }: ChatbotPanelProps) {
           />
           <button
             onClick={() => handleSend()}
-            disabled={!trend || !input.trim() || isChatBusy || dailyCount >= APP_CONFIG.maxChatsPerDay}
+            disabled={!trend || !input.trim() || isChatBusy}
             aria-label="Kirim pesan"
             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-colors btn-press ${
-              trend && input.trim() && !isChatBusy && dailyCount < APP_CONFIG.maxChatsPerDay
+              trend && input.trim() && !isChatBusy
                 ? 'bg-navy-900 text-white hover:bg-primary'
                 : 'bg-secondary-gray-200 text-secondary-gray-500 cursor-not-allowed'
             }`}
@@ -321,7 +324,7 @@ export default function ChatbotPanel({ onClose }: ChatbotPanelProps) {
           </button>
         </div>
         <p className="mt-2 text-center text-xs text-secondary-gray-500">
-          Enter untuk kirim / Shift+Enter untuk baris baru / Maks 20 per hari
+          Enter untuk kirim / Shift+Enter untuk baris baru
         </p>
       </div>
     </div>

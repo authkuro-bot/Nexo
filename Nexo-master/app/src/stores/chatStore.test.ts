@@ -1,6 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { APP_CONFIG } from '@/lib/constants';
+import { useAuthStore } from './authStore';
 import { useChatStore } from './chatStore';
+
+function getJakartaDateKey() {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
 
 function createSseResponse(events: string[]) {
   const encoder = new TextEncoder();
@@ -31,6 +43,17 @@ function createErrorResponse(status: number, error: string) {
 describe('chatStore', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    localStorage.clear();
+    useAuthStore.setState({
+      user: {
+        id: 'user-1',
+        name: 'Demo User',
+        phone: '081234567890',
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      token: 'test-token',
+    });
     useChatStore.setState({
       sessions: {},
       welcomes: {},
@@ -38,15 +61,18 @@ describe('chatStore', () => {
       welcomeErrors: {},
       requests: {},
       dailyCount: 0,
+      activeUserId: 'user-1',
+      usageDate: getJakartaDateKey(),
     });
   });
 
   it('moves from analyzing to a completed streamed answer', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(createSseResponse([
+    const fetchMock = vi.fn().mockResolvedValue(createSseResponse([
       'data: {"chunk":"Jawaban "}\n\n',
       'data: {"chunk":"Nexo"}\n\n',
       'data: [DONE]\n\n',
-    ])));
+    ]));
+    vi.stubGlobal('fetch', fetchMock);
 
     const requestPromise = useChatStore.getState().streamChat('trend-1', 'Apa peluangnya?');
     expect(useChatStore.getState().requests['trend-1']?.phase).toBe('analyzing');
@@ -63,6 +89,14 @@ describe('chatStore', () => {
       status: 'complete',
     });
     expect(state.dailyCount).toBe(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/chat'),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer test-token',
+        }),
+      }),
+    );
   });
 
   it('retries a failed request without duplicating the user message', async () => {
@@ -111,18 +145,52 @@ describe('chatStore', () => {
     expect(state.dailyCount).toBe(0);
   });
 
-  it('does not offer retry when the daily limit is reached', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      createErrorResponse(429, 'Batas 20 chat per hari tercapai. Coba lagi besok.'),
-    ));
+  it('keeps chatting after the visual counter reaches zero', async () => {
+    useChatStore.setState({ dailyCount: APP_CONFIG.maxChatsPerDay });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(createSseResponse([
+      'data: {"chunk":"Chat tetap berjalan"}\n\n',
+      'data: [DONE]\n\n',
+    ])));
 
-    await useChatStore.getState().streamChat('trend-4', 'Pertanyaan terakhir');
+    await useChatStore.getState().streamChat('trend-4', 'Pertanyaan setelah nol');
 
-    expect(useChatStore.getState().requests['trend-4']).toMatchObject({
-      phase: 'failed',
-      retryable: false,
+    const state = useChatStore.getState();
+    expect(state.requests['trend-4']).toMatchObject({
+      phase: 'idle',
     });
-    expect(useChatStore.getState().dailyCount).toBe(APP_CONFIG.maxChatsPerDay);
+    expect(state.sessions['trend-4']?.messages[1]?.content).toBe('Chat tetap berjalan');
+    expect(state.dailyCount).toBe(APP_CONFIG.maxChatsPerDay);
+  });
+
+  it('starts a different account with a fresh visual counter', () => {
+    useChatStore.setState({ dailyCount: APP_CONFIG.maxChatsPerDay });
+
+    useChatStore.getState().syncUser('user-2');
+
+    expect(useChatStore.getState()).toMatchObject({
+      activeUserId: 'user-2',
+      dailyCount: 0,
+      sessions: {},
+      requests: {},
+    });
+  });
+
+  it('resets the visual counter on a new Jakarta date without clearing the session', () => {
+    useChatStore.setState({
+      dailyCount: APP_CONFIG.maxChatsPerDay,
+      usageDate: '2020-01-01',
+      sessions: {
+        'trend-1': {
+          trendId: 'trend-1',
+          messages: [],
+        },
+      },
+    });
+
+    useChatStore.getState().syncUser('user-1');
+
+    expect(useChatStore.getState().dailyCount).toBe(0);
+    expect(useChatStore.getState().sessions['trend-1']).toBeDefined();
   });
 
   it('retries a failed welcome request', async () => {

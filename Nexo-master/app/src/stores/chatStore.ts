@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { APP_CONFIG } from '@/lib/constants';
+import { useAuthStore } from '@/stores/authStore';
 
 export type ChatMessageStatus = 'streaming' | 'complete' | 'failed';
 export type ChatRequestPhase = 'idle' | 'analyzing' | 'streaming' | 'failed';
@@ -44,6 +45,8 @@ interface ChatState {
   welcomeErrors: Record<string, string | null>;
   requests: Record<string, ChatRequestState>;
   dailyCount: number;
+  activeUserId: string | null;
+  usageDate: string;
 
   addMessage: (trendId: string, role: 'user' | 'assistant', content: string) => void;
   fetchWelcome: (trendId: string) => Promise<void>;
@@ -52,7 +55,7 @@ interface ChatState {
   retryFailedChat: (trendId: string) => Promise<void>;
   clearSession: (trendId: string) => void;
   getSession: (trendId: string) => ChatSession;
-  setDailyCount: (count: number) => void;
+  syncUser: (userId: string | null) => void;
 }
 
 interface ChatFailureOptions {
@@ -76,6 +79,47 @@ class ChatRequestFailure extends Error {
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const CHAT_USAGE_STORAGE_KEY = 'nexo_chat_usage_v1';
+
+interface StoredChatUsage {
+  date: string;
+  count: number;
+}
+
+function getJakartaDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function readStoredUsage(userId: string) {
+  try {
+    const stored = JSON.parse(localStorage.getItem(CHAT_USAGE_STORAGE_KEY) || '{}') as Record<string, StoredChatUsage>;
+    const usage = stored[userId];
+    if (!usage || usage.date !== getJakartaDateKey()) return 0;
+    return Math.min(APP_CONFIG.maxChatsPerDay, Math.max(0, Number(usage.count) || 0));
+  } catch {
+    return 0;
+  }
+}
+
+function writeStoredUsage(userId: string, count: number) {
+  try {
+    const stored = JSON.parse(localStorage.getItem(CHAT_USAGE_STORAGE_KEY) || '{}') as Record<string, StoredChatUsage>;
+    stored[userId] = {
+      date: getJakartaDateKey(),
+      count: Math.min(APP_CONFIG.maxChatsPerDay, Math.max(0, count)),
+    };
+    localStorage.setItem(CHAT_USAGE_STORAGE_KEY, JSON.stringify(stored));
+  } catch {
+    // The visual counter can remain in memory when browser storage is unavailable.
+  }
+}
 
 function createMessageId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -89,7 +133,7 @@ function isRequestActive(request?: ChatRequestState) {
 }
 
 function isRetryableHttpStatus(status: number) {
-  return status >= 500 || status === 408 || status === 425;
+  return status >= 500 || status === 408 || status === 425 || status === 429;
 }
 
 function getErrorMessage(error: unknown) {
@@ -110,9 +154,22 @@ export const useChatStore = create<ChatState>((set, get) => {
     let receivedChunk = false;
 
     try {
+      const { token, user } = useAuthStore.getState();
+      if (!token || !user?.id) {
+        throw new ChatRequestFailure('Sesi login berakhir. Silakan login kembali.', {
+          status: 401,
+          code: 'UNAUTHORIZED',
+          retryable: false,
+        });
+      }
+      const requestUserId = user.id;
+
       const res = await fetch(`${API_URL}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ message, trendId }),
       });
 
@@ -238,9 +295,15 @@ export const useChatStore = create<ChatState>((set, get) => {
               retryable: false,
             },
           },
-          dailyCount: state.dailyCount + 1,
+          dailyCount: state.activeUserId === requestUserId
+            ? Math.min(APP_CONFIG.maxChatsPerDay, state.dailyCount + 1)
+            : state.dailyCount,
         };
       });
+      const nextDailyCount = get().activeUserId === requestUserId
+        ? get().dailyCount
+        : Math.min(APP_CONFIG.maxChatsPerDay, readStoredUsage(requestUserId) + 1);
+      writeStoredUsage(requestUserId, nextDailyCount);
     } catch (error) {
       const failure = error instanceof ChatRequestFailure
         ? error
@@ -272,7 +335,6 @@ export const useChatStore = create<ChatState>((set, get) => {
               retryable: failure.retryable,
             },
           },
-          dailyCount: failure.status === 429 ? APP_CONFIG.maxChatsPerDay : state.dailyCount,
         };
       });
     }
@@ -285,6 +347,8 @@ export const useChatStore = create<ChatState>((set, get) => {
     welcomeErrors: {},
     requests: {},
     dailyCount: 0,
+    activeUserId: null,
+    usageDate: getJakartaDateKey(),
 
     addMessage: (trendId, role, content) =>
       set((state) => {
@@ -360,6 +424,9 @@ export const useChatStore = create<ChatState>((set, get) => {
     },
 
     streamChat: async (trendId, message) => {
+      const userId = useAuthStore.getState().user?.id ?? null;
+      get().syncUser(userId);
+
       const currentRequest = get().requests[trendId];
       if (isRequestActive(currentRequest)) return;
 
@@ -450,6 +517,23 @@ export const useChatStore = create<ChatState>((set, get) => {
       return get().sessions[trendId] ?? { trendId, messages: [] };
     },
 
-    setDailyCount: (count) => set({ dailyCount: count }),
+    syncUser: (userId) =>
+      set((state) => {
+        const usageDate = getJakartaDateKey();
+        if (state.activeUserId === userId && state.usageDate === usageDate) return state;
+        if (state.activeUserId === userId) {
+          return {
+            usageDate,
+            dailyCount: userId ? readStoredUsage(userId) : 0,
+          };
+        }
+        return {
+          activeUserId: userId,
+          usageDate,
+          dailyCount: userId ? readStoredUsage(userId) : 0,
+          sessions: {},
+          requests: {},
+        };
+      }),
   };
 });
