@@ -184,6 +184,19 @@
   background-size: 200% 100% !important;
 }
 
+.dark .nexo-data-track {
+  border-color: rgba(112, 176, 224, 0.32);
+  background:
+    linear-gradient(90deg, rgba(16, 39, 62, 0.96), rgba(23, 55, 82, 0.94)),
+    repeating-linear-gradient(90deg, transparent 0 23px, rgba(128, 192, 240, 0.12) 23px 24px);
+}
+
+.dark .nexo-data-runner-logo {
+  border-color: rgba(204, 235, 255, 0.92);
+  background: #f7fcff;
+  box-shadow: 0 4px 14px rgba(4, 20, 36, 0.42);
+}
+
 .dark .light-scope {
   background-color: #f5f7fb;
   color: #0e1320;

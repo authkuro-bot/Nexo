@@ -190,15 +190,20 @@
 }
 
 .nexo-data-track {
+  --nexo-blue-deep: #205080;
+  --nexo-blue-dark: #206090;
+  --nexo-blue-medium: #2070a0;
+  --nexo-blue-light: #70b0e0;
+  --nexo-blue-sky: #80c0f0;
   position: relative;
   display: block;
   height: 2.5rem;
   overflow: hidden;
-  border: 1px solid rgba(91, 76, 255, 0.2);
+  border: 1px solid rgba(32, 112, 160, 0.24);
   border-radius: 0.875rem;
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.78), rgba(238, 242, 255, 0.9)),
-    repeating-linear-gradient(90deg, transparent 0 23px, rgba(91, 76, 255, 0.08) 23px 24px);
+    linear-gradient(90deg, rgba(255, 255, 255, 0.82), rgba(237, 248, 255, 0.94)),
+    repeating-linear-gradient(90deg, transparent 0 23px, rgba(32, 112, 160, 0.1) 23px 24px);
   animation: nexoDataGrid 900ms linear infinite;
 }
 
@@ -239,14 +244,15 @@
   border-radius: 999px 0 0 999px;
   background: linear-gradient(
     to bottom,
-    #ff5f6d 0 16.66%,
-    #ffad5a 16.66% 33.33%,
-    #f7dc5c 33.33% 50%,
-    #4dd599 50% 66.66%,
-    #4aa8ff 66.66% 83.33%,
-    #8b6cff 83.33% 100%
+    var(--nexo-blue-sky) 0%,
+    var(--nexo-blue-light) 28%,
+    var(--nexo-blue-medium) 58%,
+    var(--nexo-blue-dark) 78%,
+    var(--nexo-blue-deep) 100%
   );
-  box-shadow: 0 0 12px rgba(91, 76, 255, 0.2);
+  box-shadow:
+    0 0 12px rgba(112, 176, 224, 0.42),
+    0 0 5px rgba(32, 80, 128, 0.24);
 }
 
 .nexo-data-runner-logo {
@@ -276,8 +282,8 @@
   width: 0.3rem;
   height: 0.3rem;
   border-radius: 999px;
-  background: #7c66ff;
-  box-shadow: 0 0 8px #7c66ff;
+  background: var(--nexo-blue-sky);
+  box-shadow: 0 0 8px rgba(128, 192, 240, 0.9);
   animation: nexoDataSpark 700ms ease-in-out infinite;
 }
 
@@ -289,6 +295,8 @@
 .nexo-data-runner-spark-two {
   right: -1.25rem;
   bottom: 0.15rem;
+  background: var(--nexo-blue-medium);
+  box-shadow: 0 0 8px rgba(32, 112, 160, 0.85);
   animation-delay: 300ms;
 }
 
